@@ -3,6 +3,7 @@ import type StoryBoardPlugin from "./main";
 import type { StoryCardFrontmatter, PartEntry } from "./types";
 import { countWords, countChars } from "./wordcount";
 import { CardFormModal } from "./modals";
+import { PromoteSeedModal } from "./promote";
 
 // Color is driven purely by position in the configured status list, never by
 // the label text — so renaming/reordering statuses (or a differently-worded
@@ -72,6 +73,14 @@ export async function renderStoryCard(
 	}
 
 	const headerButtons = header.createDiv({ cls: "story-board-header-buttons" });
+
+	if (fm.is_seed) {
+		const promoteBtn = headerButtons.createEl("button", { cls: "story-board-edit-btn", text: "↗" });
+		promoteBtn.setAttribute("aria-label", "Promote to story");
+		promoteBtn.addEventListener("click", () => {
+			new PromoteSeedModal(app, plugin, file, fm.title || file.basename).open();
+		});
+	}
 
 	const editBtn = headerButtons.createEl("button", { cls: "story-board-edit-btn", text: "✎" });
 	editBtn.setAttribute("aria-label", "Edit card");

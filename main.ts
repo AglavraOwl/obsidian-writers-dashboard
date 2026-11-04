@@ -4,9 +4,15 @@ import { renderStoryCard } from "./cardRenderer";
 import type { StoryCardFrontmatter } from "./types";
 import { syncDashboard } from "./sync";
 import { CardFormModal } from "./modals";
+import { PromoteSeedModal } from "./promote";
 
 function isCardFile(app: App, file: TFile): boolean {
 	return app.metadataCache.getFileCache(file)?.frontmatter?.["storyboard-card"] === true;
+}
+
+function isSeedCardFile(app: App, file: TFile): boolean {
+	const fm = app.metadataCache.getFileCache(file)?.frontmatter as StoryCardFrontmatter | undefined;
+	return !!fm && fm["storyboard-card"] === true && !!fm.is_seed;
 }
 
 const TEMPLATE = `---
@@ -86,6 +92,22 @@ export default class StoryBoardPlugin extends Plugin {
 					new CardFormModal(this.app, this, activeFile.parent ?? this.app.vault.getRoot(), {
 						existingFile: activeFile,
 					}).open();
+				}
+				return true;
+			},
+		});
+
+		this.addCommand({
+			id: "promote-seed-to-story",
+			name: "Promote seed to story",
+			checkCallback: (checking: boolean) => {
+				const activeFile = this.app.workspace.getActiveFile();
+				if (!activeFile || !isSeedCardFile(this.app, activeFile)) return false;
+				if (!checking) {
+					const fm = this.app.metadataCache.getFileCache(activeFile)?.frontmatter as
+						| StoryCardFrontmatter
+						| undefined;
+					new PromoteSeedModal(this.app, this, activeFile, fm?.title || activeFile.basename).open();
 				}
 				return true;
 			},

@@ -14,6 +14,8 @@ Run **"Create story card"** from the Command Palette (uses the currently open fi
 
 "+ Add part from this folder" opens a picker over that folder's other markdown files, so filenames are never hand-typed. Creates `_card — <title>.md` and opens it.
 
+**Promoting a seed:** click the ↗ button on a seed card, or run **"Promote seed to story."** Lets you create a new folder (suggested as a sibling of your Seeds folder, named after the title) or pick an existing one, moves the card there via Obsidian's own rename — which updates links, including on the dashboard canvas — turns off `is_seed`, and opens the edit form so you can fill in status/target/parts right away.
+
 **Editing a card:** click the ✎ button on the card itself, or run **"Edit story card"** with the card note open. Same form, pre-filled — add a goal, change the target, add or remove parts, all without touching raw YAML.
 
 The Properties panel is hidden on any note with `cssclasses: [storyboard-card]` (the ones this plugin creates), since the card already shows that data — toggle this in Settings → Story Board → "Hide frontmatter on story cards." Status/part-status changes happen through the rendered card's own controls, not by editing YAML directly.
@@ -60,7 +62,7 @@ parts: []
 
 - **Insert story card template** — drops the YAML + block above into the current note.
 - **Sync dashboard canvas with story cards** — scans the vault for notes with `storyboard-card: true` and adds any missing ones as file-nodes to the canvas set in Settings → Story Board → "Dashboard canvas," staged in a grid below whatever's already there. It never moves or removes existing nodes — placement past that point is yours.
-- **Create story card** — see "Creating a card" above.
+- **Create story card** / **Edit story card** / **Promote seed to story** — see above.
 
 The dashboard canvas itself is picked from a dropdown of existing `.canvas` files in Settings → Story Board, with a "+ New canvas" button to create one on the spot — no more typing a path that might not exist.
 

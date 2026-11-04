@@ -39,7 +39,16 @@ drawn to each story card — no plugin support needed for that, Canvas already d
   existing layout; never moves/removes what's already placed.
 - Frontmatter Properties panel, Obsidian's inline title, and the Canvas node's filename label are all
   hidden on card notes (toggleable), so the raw filename doesn't duplicate the card's own title.
-- Repo: https://github.com/AglavraOwl/obsidian-writers-dashboard (public).
+- "Promote seed to story" (command + ↗ button on seed cards, `promote.ts`): creates or picks a
+  destination folder (defaults to a sibling of the Seeds folder, named after the title), moves the card
+  there via `fileManager.renameFile` (so links — including the dashboard canvas's reference to it —
+  update automatically, same mechanism Obsidian's own file-explorer move uses), flips `is_seed` off, and
+  opens the edit form.
+- README exists in English and Russian (`README.md` / `README.ru.md`), cross-linked.
+- Published via BRAT: GitHub release `0.1.0` with `manifest.json`/`main.js`/`styles.css` attached.
+- Repo: https://github.com/AglavraOwl/obsidian-writers-dashboard (public). Installed in the user's real
+  vault as of 2026-11-04; feedback from there (and from a friend who's trying it too) is the next
+  driver of priorities, not this backlog.
 
 ## Known issues / deliberately shelved
 
@@ -69,6 +78,10 @@ drawn to each story card — no plugin support needed for that, Canvas already d
 
 ## Backlog (not committed to, just not forgotten)
 
+- **Pictures/covers on cards.** Wanted, not speculative — the user wants images for visual distinction
+  between cards at a glance. No design yet: likely a frontmatter field (e.g. `cover`) pointing at an
+  image in the vault, rendered at the top of the card. Worth checking whether Canvas file-node embeds
+  render local images reliably before committing to an approach.
 - `final_draft` has a schema field but no picker UI — currently text/link only, editable via raw
   frontmatter.
 - Maybe: a command to add the *currently open* file as the next part of a story, while viewing that file
