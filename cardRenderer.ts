@@ -2,6 +2,7 @@ import { App, MarkdownPostProcessorContext, TFile } from "obsidian";
 import type StoryBoardPlugin from "./main";
 import type { StoryCardFrontmatter, PartEntry } from "./types";
 import { countWords, countChars } from "./wordcount";
+import { CardFormModal } from "./modals";
 
 // Color is driven purely by position in the configured status list, never by
 // the label text — so renaming/reordering statuses (or a differently-worded
@@ -54,7 +55,12 @@ export async function renderStoryCard(
 
 	el.empty();
 	const card = el.createDiv({ cls: "story-board-card" });
-	if (fm.highlight) card.addClass("story-board-highlight");
+	// Highlight (star + glow border) is shelved for now: Canvas doesn't
+	// live-refresh embedded content reliably, so the star looked clickable
+	// but gave no visible feedback until a reload. The frontmatter field and
+	// the modal toggle are left alone — only this rendering is disabled —
+	// so turning it back on later is a one-line change here, not a redesign.
+	// See ROADMAP.md.
 	card.style.borderLeftColor = colorForPosition(settings.storyStatuses, fm.status);
 
 	// Header
@@ -65,38 +71,38 @@ export async function renderStoryCard(
 		card.createEl("div", { text: fm.description, cls: "story-board-description" });
 	}
 
-	const star = header.createEl("button", {
-		cls: fm.highlight ? "story-board-star story-board-star-active" : "story-board-star",
-		text: fm.highlight ? "★" : "☆",
+	const headerButtons = header.createDiv({ cls: "story-board-header-buttons" });
+
+	const editBtn = headerButtons.createEl("button", { cls: "story-board-edit-btn", text: "✎" });
+	editBtn.setAttribute("aria-label", "Edit card");
+	editBtn.addEventListener("click", () => {
+		new CardFormModal(app, plugin, file.parent ?? app.vault.getRoot(), { existingFile: file }).open();
 	});
-	star.setAttribute("aria-label", "Toggle focus/priority");
-	star.addEventListener("click", async () => {
-		await app.fileManager.processFrontMatter(file, (data) => {
-			data.highlight = !data.highlight;
+
+	// Status row — a seed has no status, just an idea. Target (if any) sits
+	// left, status control is pushed to the right.
+	if (!fm.is_seed) {
+		const statusRow = card.createDiv({ cls: "story-board-status-row" });
+
+		if (fm.target) {
+			statusRow.createEl("span", { text: `🎯 ${fm.target}`, cls: "story-board-target" });
+		}
+
+		const statusSelect = statusRow.createEl("select", { cls: "story-board-status-select" });
+		for (const s of settings.storyStatuses) {
+			const opt = statusSelect.createEl("option", { text: s, value: s });
+			if (s === fm.status) opt.selected = true;
+		}
+		if (!fm.status) {
+			const emptyOpt = statusSelect.createEl("option", { text: "(no status)", value: "" });
+			emptyOpt.selected = true;
+		}
+		statusSelect.addEventListener("change", async () => {
+			await app.fileManager.processFrontMatter(file, (data) => {
+				data.status = statusSelect.value;
+			});
 		});
-	});
-
-	// Status row — target (if any) sits left, status control is pushed to the right.
-	const statusRow = card.createDiv({ cls: "story-board-status-row" });
-
-	if (fm.target) {
-		statusRow.createEl("span", { text: `🎯 ${fm.target}`, cls: "story-board-target" });
 	}
-
-	const statusSelect = statusRow.createEl("select", { cls: "story-board-status-select" });
-	for (const s of settings.storyStatuses) {
-		const opt = statusSelect.createEl("option", { text: s, value: s });
-		if (s === fm.status) opt.selected = true;
-	}
-	if (!fm.status) {
-		const emptyOpt = statusSelect.createEl("option", { text: "(no status)", value: "" });
-		emptyOpt.selected = true;
-	}
-	statusSelect.addEventListener("change", async () => {
-		await app.fileManager.processFrontMatter(file, (data) => {
-			data.status = statusSelect.value;
-		});
-	});
 
 	// Final draft link (shown whenever it's set, regardless of status)
 	if (fm.final_draft) {
@@ -118,17 +124,19 @@ export async function renderStoryCard(
 	let totalChars = 0;
 
 	if (parts.length > 0) {
+		// A single grid container (not one flex row per part) so the
+		// title/status/count columns line up across rows regardless of how
+		// long any individual filename, status word, or count happens to be.
 		const partsEl = card.createDiv({ cls: "story-board-parts" });
 		for (let i = 0; i < parts.length; i++) {
 			const part = parts[i];
-			const row = partsEl.createDiv({ cls: "story-board-part-row" });
 
-			const dot = row.createEl("span", { cls: "story-board-dot" });
+			const dot = partsEl.createEl("span", { cls: "story-board-dot" });
 			dot.style.backgroundColor = colorForPosition(settings.partStatuses, part.status);
 
-			makeInternalLink(row, app, part.file, sourcePath, part.file.replace(/\.md$/, ""));
+			makeInternalLink(partsEl, app, part.file, sourcePath, part.file.replace(/\.md$/, ""));
 
-			const partSelect = row.createEl("select", { cls: "story-board-part-status" });
+			const partSelect = partsEl.createEl("select", { cls: "story-board-part-status" });
 			for (const s of settings.partStatuses) {
 				const opt = partSelect.createEl("option", { text: s, value: s });
 				if (s === part.status) opt.selected = true;
@@ -145,26 +153,30 @@ export async function renderStoryCard(
 			if (counts) {
 				totalWords += counts.words;
 				totalChars += counts.chars;
-				row.createEl("span", { text: `${counts.words}w`, cls: "story-board-part-count" });
+				partsEl.createEl("span", { text: `${counts.words}w`, cls: "story-board-part-count" });
+			} else {
+				partsEl.createEl("span", { cls: "story-board-part-count" });
 			}
 		}
-	} else {
+	} else if (!fm.is_seed) {
 		const content = await app.vault.cachedRead(file);
 		totalWords = countWords(content);
 		totalChars = countChars(content);
 	}
 
-	// Progress
-	const progressEl = card.createDiv({ cls: "story-board-progress" });
-	if (fm.word_goal) {
-		renderBar(progressEl, totalWords, fm.word_goal, "words");
-	} else if (fm.char_goal) {
-		renderBar(progressEl, totalChars, fm.char_goal, "chars");
-	} else {
-		progressEl.createEl("span", {
-			text: `${totalWords} words / ${totalChars} chars`,
-			cls: "story-board-raw-count",
-		});
+	// Progress — a seed is just an idea, nothing to count yet.
+	if (!fm.is_seed) {
+		const progressEl = card.createDiv({ cls: "story-board-progress" });
+		if (fm.word_goal) {
+			renderBar(progressEl, totalWords, fm.word_goal, "words");
+		} else if (fm.char_goal) {
+			renderBar(progressEl, totalChars, fm.char_goal, "chars");
+		} else {
+			progressEl.createEl("span", {
+				text: `${totalWords} words / ${totalChars} chars`,
+				cls: "story-board-raw-count",
+			});
+		}
 	}
 }
 

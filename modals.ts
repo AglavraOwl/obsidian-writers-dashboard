@@ -1,6 +1,6 @@
-import { App, FuzzySuggestModal, Modal, Notice, Setting, TFile, TFolder, normalizePath } from "obsidian";
+import { App, FuzzySuggestModal, Modal, Notice, Setting, TFile, TFolder, getFrontMatterInfo, normalizePath, parseYaml } from "obsidian";
 import type StoryBoardPlugin from "./main";
-import type { PartEntry } from "./types";
+import type { PartEntry, StoryCardFrontmatter } from "./types";
 
 function isCardFile(app: App, file: TFile): boolean {
 	return app.metadataCache.getFileCache(file)?.frontmatter?.["storyboard-card"] === true;
@@ -106,11 +106,22 @@ export class NamePromptModal extends Modal {
 	}
 }
 
-export class CreateCardModal extends Modal {
+interface CardFormOpts {
+	defaultSeed?: boolean;
+	existingFile?: TFile;
+}
+
+// Handles both "Create story card" and "Edit story card" — same fields,
+// same part-picking UI. In edit mode it writes back to existingFile instead
+// of creating a new one, and the seed toggle only changes the is_seed flag
+// (the file is never moved).
+export class CardFormModal extends Modal {
 	private plugin: StoryBoardPlugin;
 	private folder: TFolder;
+	private existingFile?: TFile;
 
 	private isSeed: boolean;
+	private highlight = false;
 	private title = "";
 	private description = "";
 	private status: string;
@@ -120,65 +131,113 @@ export class CreateCardModal extends Modal {
 	private charGoal: number | undefined;
 	private parts: PartEntry[] = [];
 
-	constructor(app: App, plugin: StoryBoardPlugin, folder: TFolder, defaultSeed = false) {
+	constructor(app: App, plugin: StoryBoardPlugin, folder: TFolder, opts: CardFormOpts = {}) {
 		super(app);
 		this.plugin = plugin;
-		this.folder = folder;
-		this.isSeed = defaultSeed;
+		this.existingFile = opts.existingFile;
+		this.isSeed = opts.defaultSeed ?? false;
 		this.status = plugin.settings.storyStatuses[0] ?? "";
+		this.folder = this.existingFile?.parent ?? folder;
 	}
 
-	onOpen(): void {
-		const { contentEl } = this;
-		contentEl.createEl("h2", { text: "New story card" });
+	async onOpen(): Promise<void> {
+		if (this.existingFile) {
+			// Read frontmatter straight from disk rather than metadataCache,
+			// which can still hold the pre-save value for a file written
+			// moments ago (e.g. editing right after creating it).
+			const content = await this.app.vault.read(this.existingFile);
+			const info = getFrontMatterInfo(content);
+			let fm: StoryCardFrontmatter = {};
+			if (info.exists) {
+				try {
+					fm = (parseYaml(info.frontmatter) ?? {}) as StoryCardFrontmatter;
+				} catch {
+					fm = {};
+				}
+			}
+			this.isSeed = !!fm.is_seed;
+			this.highlight = !!fm.highlight;
+			this.title = fm.title ?? this.existingFile.basename;
+			this.description = fm.description ?? "";
+			this.status = fm.status ?? this.status;
+			this.target = fm.target ?? "";
+			this.focus = fm.focus ?? "";
+			this.wordGoal = fm.word_goal;
+			this.charGoal = fm.char_goal;
+			this.parts = Array.isArray(fm.parts) ? fm.parts.map((p) => ({ ...p })) : [];
+		}
 
-		const developedSection = contentEl.createDiv();
+		const { contentEl } = this;
+		contentEl.createEl("h2", { text: this.existingFile ? "Edit story card" : "New story card" });
+
+		// A seed is the other card type, not a status: title + idea + focus
+		// only. These two containers are declared now so the toggle below can
+		// close over them, but — important — each is only actually created()
+		// (and so only takes its place in the DOM) at the point in the code
+		// further down where it belongs visually. Creating an empty container
+		// early just to fill it in later puts its *contents* in the wrong
+		// spot: the container keeps the DOM position it was created at, not
+		// the position where it was filled in.
+		let storyOnly!: HTMLElement;
+		let partsSection!: HTMLElement;
 
 		new Setting(contentEl)
 			.setName("This is a seed")
-			.setDesc(`Just an idea — no story folder yet. Saved to "${this.plugin.settings.seedsFolderPath}" instead of the current folder.`)
+			.setDesc("Just an idea — only title, main idea and focus. No status, target, goals or parts.")
 			.addToggle((toggle) =>
 				toggle.setValue(this.isSeed).onChange((value) => {
 					this.isSeed = value;
-					developedSection.style.display = value ? "none" : "";
+					storyOnly.style.display = value ? "none" : "";
+					partsSection.style.display = value ? "none" : "";
 				})
 			);
-		developedSection.style.display = this.isSeed ? "none" : "";
-
-		new Setting(contentEl).setName("Title").addText((t) => t.onChange((v) => (this.title = v)));
 
 		new Setting(contentEl)
-			.setName("Description")
-			.setDesc("Short — a line or two, what the idea is.")
-			.addTextArea((t) => t.onChange((v) => (this.description = v)));
+			.setName("Title")
+			.addText((t) => t.setValue(this.title).onChange((v) => (this.title = v)));
 
-		new Setting(contentEl).setName("Status").addDropdown((d) => {
+		new Setting(contentEl)
+			.setName("Main idea")
+			.setDesc("Short — a line or two, what the idea is.")
+			.addTextArea((t) => t.setValue(this.description).onChange((v) => (this.description = v)));
+
+		// Highlight is shelved for now (see ROADMAP.md) — field and value are
+		// still read/written below, just not exposed in this form.
+
+		storyOnly = contentEl.createDiv();
+		storyOnly.style.display = this.isSeed ? "none" : "";
+
+		new Setting(storyOnly).setName("Status").addDropdown((d) => {
 			for (const s of this.plugin.settings.storyStatuses) d.addOption(s, s);
 			d.setValue(this.status);
 			d.onChange((v) => (this.status = v));
 		});
 
-		new Setting(developedSection)
+		new Setting(storyOnly)
 			.setName("Target")
 			.setDesc("Deadline, contest, venue — free text, optional.")
-			.addText((t) => t.onChange((v) => (this.target = v)));
+			.addText((t) => t.setValue(this.target).onChange((v) => (this.target = v)));
 
-		new Setting(developedSection)
-			.setName("Focus / next step")
-			.addText((t) => t.onChange((v) => (this.focus = v)));
-
-		new Setting(developedSection).setName("Word goal").addText((t) => {
+		new Setting(storyOnly).setName("Word goal").addText((t) => {
 			t.inputEl.type = "number";
+			if (this.wordGoal) t.setValue(String(this.wordGoal));
 			t.onChange((v) => (this.wordGoal = v ? Number(v) : undefined));
 		});
 
-		new Setting(developedSection).setName("Character goal").addText((t) => {
+		new Setting(storyOnly).setName("Character goal").addText((t) => {
 			t.inputEl.type = "number";
+			if (this.charGoal) t.setValue(String(this.charGoal));
 			t.onChange((v) => (this.charGoal = v ? Number(v) : undefined));
 		});
 
-		developedSection.createEl("h3", { text: "Parts" });
-		const partsEl = developedSection.createDiv();
+		new Setting(contentEl)
+			.setName("Focus / next step")
+			.addText((t) => t.setValue(this.focus).onChange((v) => (this.focus = v)));
+
+		partsSection = contentEl.createDiv();
+		partsSection.style.display = this.isSeed ? "none" : "";
+		partsSection.createEl("h3", { text: "Parts" });
+		const partsEl = partsSection.createDiv();
 
 		const redrawParts = () => {
 			partsEl.empty();
@@ -204,7 +263,7 @@ export class CreateCardModal extends Modal {
 		};
 		redrawParts();
 
-		const addPartBtn = developedSection.createEl("button", { text: "+ Add part from this folder" });
+		const addPartBtn = partsSection.createEl("button", { text: "+ Add part from this folder" });
 		addPartBtn.addEventListener("click", () => {
 			const existing = new Set(this.parts.map((p) => p.file));
 			const candidates = this.app.vault
@@ -212,6 +271,7 @@ export class CreateCardModal extends Modal {
 				.filter(
 					(f) =>
 						f.parent?.path === this.folder.path &&
+						f.path !== this.existingFile?.path &&
 						!existing.has(f.name) &&
 						!isCardFile(this.app, f)
 				);
@@ -226,8 +286,11 @@ export class CreateCardModal extends Modal {
 		});
 
 		const footer = contentEl.createDiv({ cls: "story-board-modal-footer" });
-		const createBtn = footer.createEl("button", { text: "Create card", cls: "mod-cta" });
-		createBtn.addEventListener("click", () => void this.submit());
+		const submitBtn = footer.createEl("button", {
+			text: this.existingFile ? "Save changes" : "Create card",
+			cls: "mod-cta",
+		});
+		submitBtn.addEventListener("click", () => void this.submit());
 	}
 
 	private async submit(): Promise<void> {
@@ -237,6 +300,41 @@ export class CreateCardModal extends Modal {
 			return;
 		}
 
+		const file = this.existingFile ?? (await this.createFile(title));
+		if (!file) return;
+
+		await this.app.fileManager.processFrontMatter(file, (data) => {
+			data["storyboard-card"] = true;
+			data.cssclasses = ["storyboard-card"];
+			data.title = title;
+			data.description = this.description;
+			data.is_seed = this.isSeed;
+			data.highlight = this.highlight;
+			data.focus = this.focus;
+
+			if (this.isSeed) {
+				delete data.status;
+				delete data.target;
+				delete data.word_goal;
+				delete data.char_goal;
+				delete data.parts;
+			} else {
+				data.status = this.status;
+				data.target = this.target;
+				if (this.wordGoal) data.word_goal = this.wordGoal;
+				else delete data.word_goal;
+				if (this.charGoal) data.char_goal = this.charGoal;
+				else delete data.char_goal;
+				data.parts = this.parts;
+			}
+		});
+
+		this.close();
+		if (!this.existingFile) await this.app.workspace.getLeaf(false).openFile(file);
+		else new Notice("Card updated.");
+	}
+
+	private async createFile(title: string): Promise<TFile | null> {
 		let targetFolderPath: string;
 		if (this.isSeed) {
 			const seedsPath = normalizePath(this.plugin.settings.seedsFolderPath);
@@ -253,27 +351,10 @@ export class CreateCardModal extends Modal {
 		const path = normalizePath(`${base}_card — ${safeName}.md`);
 		if (this.app.vault.getAbstractFileByPath(path)) {
 			new Notice(`"${path}" already exists.`);
-			return;
+			return null;
 		}
 
-		const file = await this.app.vault.create(path, "```storycard\n```\n");
-		await this.app.fileManager.processFrontMatter(file, (data) => {
-			data["storyboard-card"] = true;
-			data.cssclasses = ["storyboard-card"];
-			data.title = title;
-			data.description = this.description;
-			data.status = this.status;
-			data.highlight = false;
-			data.target = this.target;
-			data.focus = this.focus;
-			data.final_draft = "";
-			if (this.wordGoal) data.word_goal = this.wordGoal;
-			if (this.charGoal) data.char_goal = this.charGoal;
-			data.parts = this.parts;
-		});
-
-		this.close();
-		await this.app.workspace.getLeaf(false).openFile(file);
+		return this.app.vault.create(path, "```storycard\n```\n");
 	}
 
 	onClose(): void {

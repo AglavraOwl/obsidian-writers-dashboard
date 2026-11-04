@@ -8,6 +8,7 @@ export interface StoryCardFrontmatter {
 	title?: string;
 	description?: string;
 	status?: string;
+	is_seed?: boolean;
 	highlight?: boolean;
 	target?: string;
 	word_goal?: number;

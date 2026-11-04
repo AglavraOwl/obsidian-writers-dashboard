@@ -30,17 +30,33 @@
 	margin: 2px 0 6px;
 }
 
-.story-board-star {
+.story-board-header-buttons {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	flex-shrink: 0;
+}
+
+.story-board-star,
+.story-board-edit-btn {
 	background: none;
 	border: none;
 	cursor: pointer;
-	font-size: 1.2em;
+	font-size: 1.1em;
 	color: var(--text-muted);
 	line-height: 1;
 }
 
+.story-board-star {
+	font-size: 1.2em;
+}
+
 .story-board-star-active {
 	color: #e0a800;
+}
+
+.story-board-edit-btn:hover {
+	color: var(--text-accent);
 }
 
 .story-board-status-row {
@@ -70,36 +86,24 @@
 	color: var(--text-accent);
 }
 
+/* A single grid (not one flex row per part) so title/status/count form real
+   columns that line up across rows, regardless of content length in any one
+   row — the opposite of flexbox, where each row sizes itself independently. */
 .story-board-parts {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr) auto auto;
+	column-gap: 8px;
+	row-gap: 5px;
+	align-items: center;
 	margin: 8px 0;
 	border-top: 1px solid var(--background-modifier-border);
-	padding-top: 6px;
-}
-
-.story-board-part-row {
-	display: flex;
-	align-items: center;
-	gap: 6px;
-	padding: 2px 0;
-	flex-wrap: wrap;
+	padding-top: 8px;
 }
 
 .story-board-dot {
-	display: inline-block;
 	width: 9px;
 	height: 9px;
 	border-radius: 50%;
-	flex-shrink: 0;
-}
-
-.story-board-part-status {
-	font-size: 0.8em;
-}
-
-.story-board-part-count {
-	color: var(--text-faint);
-	font-size: 0.8em;
-	margin-left: auto;
 }
 
 .story-board-link {
@@ -107,8 +111,7 @@
 	text-decoration: none;
 }
 
-.story-board-part-row a {
-	flex: 1;
+.story-board-parts .story-board-link {
 	min-width: 0;
 	overflow: hidden;
 	text-overflow: ellipsis;
@@ -116,7 +119,15 @@
 }
 
 .story-board-part-status {
-	margin-left: auto;
+	font-size: 0.8em;
+	justify-self: stretch;
+}
+
+.story-board-part-count {
+	color: var(--text-faint);
+	font-size: 0.8em;
+	text-align: right;
+	justify-self: end;
 }
 
 .story-board-link:hover {
@@ -159,14 +170,14 @@
 	margin-bottom: 16px;
 }
 
-.story-board-status-row {
+.story-board-settings-row {
 	display: flex;
 	align-items: center;
 	gap: 6px;
 	margin: 4px 0;
 }
 
-.story-board-status-row input[type="text"] {
+.story-board-settings-row input[type="text"] {
 	flex: 1;
 }
 

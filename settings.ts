@@ -13,7 +13,9 @@ export interface StoryBoardSettings {
 }
 
 export const DEFAULT_SETTINGS: StoryBoardSettings = {
-	storyStatuses: ["seed", "in progress", "done"],
+	// "Seed" isn't a status — it's the "This is a seed" toggle instead, so a
+	// seed card never needs one of these at all.
+	storyStatuses: ["in progress", "done"],
 	partStatuses: ["not-started", "plan", "drafting", "done"],
 	dashboardCanvasPath: "Dashboard.canvas",
 	hideFrontmatter: true,
@@ -147,7 +149,7 @@ export class StoryBoardSettingTab extends PluginSettingTab {
 		const redraw = () => {
 			rows.empty();
 			list.forEach((status, i) => {
-				const row = rows.createDiv({ cls: "story-board-status-row" });
+				const row = rows.createDiv({ cls: "story-board-settings-row" });
 
 				const input = row.createEl("input", { type: "text", value: status });
 				input.addEventListener("change", () => {
@@ -180,7 +182,7 @@ export class StoryBoardSettingTab extends PluginSettingTab {
 				});
 			});
 
-			const addRow = rows.createDiv({ cls: "story-board-status-row" });
+			const addRow = rows.createDiv({ cls: "story-board-settings-row" });
 			const addBtn = addRow.createEl("button", { text: "+ add status" });
 			addBtn.addEventListener("click", () => {
 				list.push("new status");

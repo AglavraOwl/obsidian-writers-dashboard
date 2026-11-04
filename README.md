@@ -2,11 +2,17 @@
 
 Canvas-based board for organizing short stories. A story is a note with frontmatter; a `storycard` code block in that note renders it as a live card — on its own, and automatically inside a Canvas file-node that points to it.
 
+Using an AI coding agent (Claude Code or similar) alongside this vault? See [`AGENTS.md`](AGENTS.md) — it has the full frontmatter schema and the process for turning a story folder into a card on request, e.g. "make a story card from here."
+
 ## Creating a card
 
-Run **"Create story card"** from the Command Palette (uses the currently open file's folder, or defaults to a seed if nothing's open), or right-click a folder in the file explorer → **"New story card."** A form opens for title, description, status, and — unless "This is a seed" is checked — target, focus, optional word/char goal, and parts ("+ Add part from this folder" opens a picker over that folder's other markdown files, so filenames are never hand-typed). Creates `_card — <title>.md` and opens it.
+Run **"Create story card"** from the Command Palette (uses the currently open file's folder, or defaults to a seed if nothing's open), or right-click a folder in the file explorer → **"New story card."**
 
-A seed card skips target/focus/goals/parts and saves to the folder set in Settings → Story Board → "Seeds folder" (browsable, or create one on the spot) instead of wherever you ran the command — since a seed is just an idea without its own story folder yet.
+"This is a seed" is the card's type, not a status — a seed is just title, main idea, and focus; a full story additionally gets status, target, word/char goal, and parts. Toggling it shows/hides those fields live. A seed saves to the folder set in Settings → Story Board → "Seeds folder" (browsable, or create one on the spot) instead of wherever you ran the command, skips the word/char count on the rendered card entirely, and has no status of its own — `status` is only for however you track a story once it's actually being written (defaults to "in progress" / "done," fully editable in Settings).
+
+"+ Add part from this folder" opens a picker over that folder's other markdown files, so filenames are never hand-typed. Creates `_card — <title>.md` and opens it.
+
+**Editing a card:** click the ✎ button on the card itself, or run **"Edit story card"** with the card note open. Same form, pre-filled — add a goal, change the target, add or remove parts, all without touching raw YAML.
 
 The Properties panel is hidden on any note with `cssclasses: [storyboard-card]` (the ones this plugin creates), since the card already shows that data — toggle this in Settings → Story Board → "Hide frontmatter on story cards." Status/highlight/part-status changes happen through the rendered card's own controls, not by editing YAML directly.
 

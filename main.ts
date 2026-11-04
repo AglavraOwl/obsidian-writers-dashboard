@@ -1,16 +1,22 @@
-import { Editor, Plugin, TFile, TFolder } from "obsidian";
+import { App, Editor, Plugin, TFile, TFolder } from "obsidian";
 import { DEFAULT_SETTINGS, StoryBoardSettings, StoryBoardSettingTab } from "./settings";
 import { renderStoryCard } from "./cardRenderer";
 import type { StoryCardFrontmatter } from "./types";
 import { syncDashboard } from "./sync";
-import { CreateCardModal } from "./modals";
+import { CardFormModal } from "./modals";
+
+function isCardFile(app: App, file: TFile): boolean {
+	return app.metadataCache.getFileCache(file)?.frontmatter?.["storyboard-card"] === true;
+}
 
 const TEMPLATE = `---
 storyboard-card: true
 cssclasses:
   - storyboard-card
 title: ""
-status: seed
+description: ""
+is_seed: true
+status: ""
 highlight: false
 target: ""
 word_goal:
@@ -66,7 +72,22 @@ export default class StoryBoardPlugin extends Plugin {
 				const activeFile = this.app.workspace.getActiveFile();
 				const folder = activeFile?.parent ?? this.app.vault.getRoot();
 				// No clear story folder in context (nothing open) -> default to a seed.
-				new CreateCardModal(this.app, this, folder, !activeFile).open();
+				new CardFormModal(this.app, this, folder, { defaultSeed: !activeFile }).open();
+			},
+		});
+
+		this.addCommand({
+			id: "edit-story-card",
+			name: "Edit story card",
+			checkCallback: (checking: boolean) => {
+				const activeFile = this.app.workspace.getActiveFile();
+				if (!activeFile || !isCardFile(this.app, activeFile)) return false;
+				if (!checking) {
+					new CardFormModal(this.app, this, activeFile.parent ?? this.app.vault.getRoot(), {
+						existingFile: activeFile,
+					}).open();
+				}
+				return true;
 			},
 		});
 
@@ -77,7 +98,7 @@ export default class StoryBoardPlugin extends Plugin {
 					item
 						.setTitle("New story card")
 						.setIcon("layout-template")
-						.onClick(() => new CreateCardModal(this.app, this, file, false).open())
+						.onClick(() => new CardFormModal(this.app, this, file, { defaultSeed: false }).open())
 				);
 			})
 		);
