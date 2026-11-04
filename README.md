@@ -1,5 +1,7 @@
 # Writer's Dashboard
 
+[Русский](README.ru.md)
+
 Canvas-based board for organizing short stories. A story is a note with frontmatter; a `storycard` code block in that note renders it as a live card — on its own, and automatically inside a Canvas file-node that points to it.
 
 Using an AI coding agent (Claude Code or similar) alongside this vault? See [`AGENTS.md`](AGENTS.md) — it has the full frontmatter schema and the process for turning a story folder into a card on request, e.g. "make a story card from here."
@@ -14,17 +16,23 @@ Run **"Create story card"** from the Command Palette (uses the currently open fi
 
 **Editing a card:** click the ✎ button on the card itself, or run **"Edit story card"** with the card note open. Same form, pre-filled — add a goal, change the target, add or remove parts, all without touching raw YAML.
 
-The Properties panel is hidden on any note with `cssclasses: [storyboard-card]` (the ones this plugin creates), since the card already shows that data — toggle this in Settings → Story Board → "Hide frontmatter on story cards." Status/highlight/part-status changes happen through the rendered card's own controls, not by editing YAML directly.
+The Properties panel is hidden on any note with `cssclasses: [storyboard-card]` (the ones this plugin creates), since the card already shows that data — toggle this in Settings → Story Board → "Hide frontmatter on story cards." Status/part-status changes happen through the rendered card's own controls, not by editing YAML directly.
+
+**Note:** the "highlight / priority" field exists in the schema but its UI (the ★ on the card, and the toggle in this form) is currently disabled — Obsidian Canvas doesn't reliably live-refresh embedded note content, which made it look clickable without doing anything until a reload. See `ROADMAP.md`.
 
 ## Card template (manual / power-user path)
 
 Run the command **"Insert story card template"** in an empty note, or copy this:
 
-```yaml
+````yaml
 ---
 storyboard-card: true
+cssclasses:
+  - storyboard-card
 title: ""
-status: seed
+description: ""
+is_seed: true
+status: ""
 highlight: false
 target: ""
 word_goal:
@@ -34,17 +42,19 @@ final_draft: ""
 parts: []
 ---
 
-​```storycard
-​```
+```storycard
 ```
+````
 
-- `status` — one of the configured story statuses (Settings → Story Board). Position in that list drives the color, not the label.
-- `highlight` — independent of status; toggled with the ★ on the card. Use it to mark the one or two stories you're prioritizing right now, regardless of their stage.
+- `is_seed` — the card's type, not a status. `true` = idea only (title/description/focus shown; status, target, goals, and parts are ignored even if present). `false` = a developed story.
+- `status` — only meaningful when `is_seed: false`; one of the configured story statuses (Settings → Story Board). Position in that list drives the color, not the label.
+- `description` — a line or two, shown under the title on the card.
+- `highlight` — in the schema but its UI is currently disabled (see the note above).
 - `target` — free text, manual, changes whenever the real-world target changes.
 - `word_goal` / `char_goal` — optional. If set, the card shows a progress bar toward it; if both are empty, it just shows the live total.
-- `focus` — your next concrete step; free text.
-- `final_draft` — a note link to the assembled final text; shown on the card whenever it's filled in (typically once `status` is "done").
-- `parts` — list of `{file, status}`. Each part's status is also one of the configured list and gets its own color dot. Word counts are read live from the actual files, never typed in by hand.
+- `focus` — your next concrete step; free text. Shown for both seeds and developed stories.
+- `final_draft` — a note link to the assembled final text; shown on the card whenever it's filled in.
+- `parts` — list of `{file, status}`, one file per part. Each part's status is also one of the configured list and gets its own color dot. Word counts are read live from the actual files, never typed in by hand.
 
 ## Commands
 
@@ -66,4 +76,4 @@ npm run dev    # watch build
 npm run build  # production build
 ```
 
-Reload Obsidian (or disable/enable the plugin) after building, then enable "Story Board" under Settings → Community plugins.
+Reload Obsidian (or disable/enable the plugin) after building, then enable "Writer's Dashboard" under Settings → Community plugins.
