@@ -1,0 +1,202 @@
+.story-board-card {
+	border-left: 4px solid var(--text-muted);
+	border-radius: 6px;
+	padding: 10px 14px;
+	background: var(--background-secondary);
+	font-size: var(--font-text-size);
+}
+
+.story-board-highlight {
+	box-shadow: 0 0 0 2px #e0a800;
+	background: var(--background-secondary-alt);
+}
+
+.story-board-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+}
+
+.story-board-title {
+	font-weight: 700;
+	font-size: 1.1em;
+}
+
+.story-board-description {
+	color: var(--text-muted);
+	font-size: 0.9em;
+	font-style: italic;
+	margin: 2px 0 6px;
+}
+
+.story-board-star {
+	background: none;
+	border: none;
+	cursor: pointer;
+	font-size: 1.2em;
+	color: var(--text-muted);
+	line-height: 1;
+}
+
+.story-board-star-active {
+	color: #e0a800;
+}
+
+.story-board-status-row {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin: 6px 0;
+	flex-wrap: wrap;
+}
+
+.story-board-target {
+	color: var(--text-muted);
+	font-size: 0.9em;
+}
+
+.story-board-status-select {
+	margin-left: auto;
+}
+
+.story-board-final-draft,
+.story-board-focus {
+	margin: 4px 0;
+	font-size: 0.95em;
+}
+
+.story-board-focus-arrow {
+	color: var(--text-accent);
+}
+
+.story-board-parts {
+	margin: 8px 0;
+	border-top: 1px solid var(--background-modifier-border);
+	padding-top: 6px;
+}
+
+.story-board-part-row {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 2px 0;
+	flex-wrap: wrap;
+}
+
+.story-board-dot {
+	display: inline-block;
+	width: 9px;
+	height: 9px;
+	border-radius: 50%;
+	flex-shrink: 0;
+}
+
+.story-board-part-status {
+	font-size: 0.8em;
+}
+
+.story-board-part-count {
+	color: var(--text-faint);
+	font-size: 0.8em;
+	margin-left: auto;
+}
+
+.story-board-link {
+	color: var(--text-normal);
+	text-decoration: none;
+}
+
+.story-board-part-row a {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.story-board-part-status {
+	margin-left: auto;
+}
+
+.story-board-link:hover {
+	text-decoration: underline;
+	color: var(--text-accent);
+}
+
+.story-board-progress {
+	margin-top: 8px;
+}
+
+.story-board-bar-label {
+	font-size: 0.8em;
+	color: var(--text-muted);
+	margin-bottom: 2px;
+}
+
+.story-board-bar-track {
+	height: 8px;
+	border-radius: 4px;
+	background: var(--background-modifier-border);
+	overflow: hidden;
+}
+
+.story-board-bar-fill {
+	height: 100%;
+	background: var(--interactive-accent);
+}
+
+.story-board-bar-fill.story-board-bar-done {
+	background: #3fa34d;
+}
+
+.story-board-raw-count {
+	color: var(--text-muted);
+	font-size: 0.85em;
+}
+
+.story-board-status-section {
+	margin-bottom: 16px;
+}
+
+.story-board-status-row {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin: 4px 0;
+}
+
+.story-board-status-row input[type="text"] {
+	flex: 1;
+}
+
+body.story-board-hide-frontmatter .storyboard-card .metadata-container {
+	display: none !important;
+}
+
+/* Obsidian's own filename-as-heading, rendered right above our card content. */
+body.story-board-hide-frontmatter .storyboard-card .inline-title {
+	display: none !important;
+}
+
+/* Canvas also shows the raw filename as a label above the node itself. */
+body.story-board-hide-frontmatter .canvas-node:has(.storyboard-card) .canvas-node-label {
+	display: none !important;
+}
+
+.story-board-modal-part-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin: 4px 0;
+}
+
+.story-board-modal-part-file {
+	flex: 1;
+}
+
+.story-board-modal-footer {
+	display: flex;
+	justify-content: flex-end;
+	margin-top: 16px;
+}
