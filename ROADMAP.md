@@ -90,6 +90,14 @@ drawn to each story card — no plugin support needed for that, Canvas already d
   between cards at a glance. No design yet: likely a frontmatter field (e.g. `cover`) pointing at an
   image in the vault, rendered at the top of the card. Worth checking whether Canvas file-node embeds
   render local images reliably before committing to an approach.
+- **Per-part goals.** Currently `word_goal`/`char_goal` exist only at the story level, aggregating across
+  all parts. Wanted: a goal (and its own progress bar) per individual part, not just the story total.
+  `PartEntry` would need its own `word_goal`/`char_goal` alongside `file`/`status`.
+- **Default measurement unit (words vs. characters), overridable per card/part.** Right now whichever of
+  `word_goal`/`char_goal` happens to be set decides what's shown — there's no single "I prefer characters"
+  preference. Wanted: a vault-wide default in Settings (words or characters) that every new card/part goal
+  uses unless that specific one sets the other explicitly. Interacts with the per-part-goals item above —
+  worth designing together rather than separately.
 - `final_draft` has a schema field but no picker UI — currently text/link only, editable via raw
   frontmatter.
 - Maybe: a command to add the *currently open* file as the next part of a story, while viewing that file
