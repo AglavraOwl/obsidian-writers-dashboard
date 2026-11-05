@@ -6,14 +6,23 @@ function isCardFile(app: App, file: TFile): boolean {
 	return app.metadataCache.getFileCache(file)?.frontmatter?.["storyboard-card"] === true;
 }
 
+// A story's parts often sit in subfolders ("Drafts", "materials", …), not
+// just loose in the story's own folder — so "under" includes descendants.
+function isUnderFolder(file: TFile, folder: TFolder): boolean {
+	if (folder.path === "") return true;
+	return file.path.startsWith(folder.path + "/");
+}
+
 export class FilePickerModal extends FuzzySuggestModal<TFile> {
 	private files: TFile[];
 	private onPick: (file: TFile) => void;
+	private labelFor: (file: TFile) => string;
 
-	constructor(app: App, files: TFile[], onPick: (file: TFile) => void) {
+	constructor(app: App, files: TFile[], onPick: (file: TFile) => void, labelFor?: (file: TFile) => string) {
 		super(app);
 		this.files = files;
 		this.onPick = onPick;
+		this.labelFor = labelFor ?? ((file) => file.basename);
 		this.setPlaceholder("Pick a file for this part…");
 	}
 
@@ -22,7 +31,7 @@ export class FilePickerModal extends FuzzySuggestModal<TFile> {
 	}
 
 	getItemText(file: TFile): string {
-		return file.basename;
+		return this.labelFor(file);
 	}
 
 	onChooseItem(file: TFile): void {
@@ -57,6 +66,41 @@ export class FolderPickerModal extends FuzzySuggestModal<TFolder> {
 
 	onChooseItem(folder: TFolder): void {
 		this.onPick(folder);
+	}
+}
+
+export class ConfirmModal extends Modal {
+	private confirmed = false;
+	private message: string;
+	private confirmText: string;
+	private onConfirm: () => void;
+	private onCancel?: () => void;
+
+	constructor(app: App, message: string, confirmText: string, onConfirm: () => void, onCancel?: () => void) {
+		super(app);
+		this.message = message;
+		this.confirmText = confirmText;
+		this.onConfirm = onConfirm;
+		this.onCancel = onCancel;
+	}
+
+	onOpen(): void {
+		const { contentEl } = this;
+		contentEl.createEl("p", { text: this.message });
+		const footer = contentEl.createDiv({ cls: "story-board-modal-footer" });
+		const cancelBtn = footer.createEl("button", { text: "Cancel" });
+		cancelBtn.addEventListener("click", () => this.close());
+		const confirmBtn = footer.createEl("button", { text: this.confirmText, cls: "mod-cta" });
+		confirmBtn.addEventListener("click", () => {
+			this.confirmed = true;
+			this.close();
+			this.onConfirm();
+		});
+	}
+
+	onClose(): void {
+		this.contentEl.empty();
+		if (!this.confirmed) this.onCancel?.();
 	}
 }
 
@@ -263,26 +307,50 @@ export class CardFormModal extends Modal {
 		};
 		redrawParts();
 
-		const addPartBtn = partsSection.createEl("button", { text: "+ Add part from this folder" });
+		const addPartBtn = partsSection.createEl("button", { text: "+ Add part from this folder (incl. subfolders)" });
 		addPartBtn.addEventListener("click", () => {
 			const existing = new Set(this.parts.map((p) => p.file));
 			const candidates = this.app.vault
 				.getMarkdownFiles()
 				.filter(
 					(f) =>
-						f.parent?.path === this.folder.path &&
+						isUnderFolder(f, this.folder) &&
 						f.path !== this.existingFile?.path &&
 						!existing.has(f.name) &&
 						!isCardFile(this.app, f)
 				);
 			if (candidates.length === 0) {
-				new Notice("No other markdown files in this folder to pick from.");
+				new Notice("No other markdown files in this folder (or its subfolders) to pick from.");
 				return;
 			}
-			new FilePickerModal(this.app, candidates, (file) => {
-				this.parts.push({ file: file.name, status: this.plugin.settings.partStatuses[0] ?? "" });
-				redrawParts();
-			}).open();
+			const base = this.folder.path;
+			new FilePickerModal(
+				this.app,
+				candidates,
+				(file) => {
+					// Store just the filename, as before — unless another file
+					// anywhere in the vault shares that exact name, in which case
+					// getFirstLinkpathDest (used to resolve it later) could pick
+					// the wrong one; store the subfolder-qualified path instead.
+					const collides = this.app.vault.getMarkdownFiles().some((f) => f !== file && f.name === file.name);
+					const stored = collides
+						? base && file.path.startsWith(base + "/")
+							? file.path.slice(base.length + 1)
+							: file.path
+						: file.name;
+					this.parts.push({ file: stored, status: this.plugin.settings.partStatuses[0] ?? "" });
+					redrawParts();
+				},
+				(file) => {
+					// Show the subpath relative to the story folder when the file
+					// isn't directly in it, so same-named files in different
+					// subfolders (e.g. two "Part 1.md") are told apart.
+					const parentPath = file.parent?.path ?? "";
+					if (parentPath === base) return file.basename;
+					const relative = base ? parentPath.slice(base.length + 1) : parentPath;
+					return `${relative}/${file.basename}`;
+				}
+			).open();
 		});
 
 		const footer = contentEl.createDiv({ cls: "story-board-modal-footer" });

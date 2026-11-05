@@ -33,8 +33,16 @@ drawn to each story card — no plugin support needed for that, Canvas already d
   derived from *position* in the list, never the label text.
 - Unified `CardFormModal` (`modals.ts`) handles both "Create story card" and "Edit story card" — same
   form, pre-filled in edit mode, read fresh from disk (not metadataCache) to avoid stale-read races.
-- Parts are picked via a folder-scoped file picker, never hand-typed.
-- Seeds folder and dashboard canvas are both pickable/creatable from Settings, not typed paths.
+- Parts are picked via a file picker scoped to the story folder *and its subfolders* (common layouts like
+  "Drafts/" or "materials/" inside a story folder), never hand-typed. Stored as just the filename unless
+  another file anywhere in the vault shares that exact name, in which case the path relative to the story
+  folder is stored instead, to resolve to the right one.
+- Seeds folder and dashboard canvas are both pickable/creatable from Settings, not typed paths. Changing
+  the dashboard canvas now asks for confirmation first (a friend testing it picked a per-story canvas by
+  accident and got every card dumped onto it — see README's "One dashboard canvas, not several"). Sync
+  notices now name which canvas they acted on, for the same reason. There's no hard technical lock against
+  using several canvases as "the" dashboard — each sync just tracks what's already on *that* canvas
+  independently — this is a confirmation guardrail, not an enforced constraint.
 - "Sync dashboard canvas" command adds any card not yet on the canvas as a new node, staged below
   existing layout; never moves/removes what's already placed.
 - Frontmatter Properties panel, Obsidian's inline title, and the Canvas node's filename label are all

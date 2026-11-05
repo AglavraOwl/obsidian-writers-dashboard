@@ -29,7 +29,11 @@ char_goal:               # optional number
 focus: ""               # the next concrete step
 final_draft: ""          # optional link to an assembled/final draft note
 parts:                   # omit this key entirely when is_seed is true
-  - file: "exact-filename.md"   # filename only, not a path — must be a real file in the SAME folder
+  - file: "exact-filename.md"   # just the filename if it's unique in the vault; if another file
+                                 # anywhere shares that exact name, use a path relative to the story
+                                 # folder instead (e.g. "Drafts/exact-filename.md") so it resolves to
+                                 # the right one — must be a real file somewhere under the story folder,
+                                 # subfolders included (e.g. "Drafts/", "materials/")
     status: ""                   # one of the user's configured part statuses
 ---
 

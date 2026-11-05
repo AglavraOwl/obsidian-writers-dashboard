@@ -10,15 +10,15 @@ Using an AI coding agent (Claude Code or similar) alongside this vault? See [`AG
 
 Run **"Create story card"** from the Command Palette (uses the currently open file's folder, or defaults to a seed if nothing's open), or right-click a folder in the file explorer → **"New story card."**
 
-"This is a seed" is the card's type, not a status — a seed is just title, main idea, and focus; a full story additionally gets status, target, word/char goal, and parts. Toggling it shows/hides those fields live. A seed saves to the folder set in Settings → Story Board → "Seeds folder" (browsable, or create one on the spot) instead of wherever you ran the command, skips the word/char count on the rendered card entirely, and has no status of its own — `status` is only for however you track a story once it's actually being written (defaults to "in progress" / "done," fully editable in Settings).
+"This is a seed" is the card's type, not a status — a seed is just title, main idea, and focus; a full story additionally gets status, target, word/char goal, and parts. Toggling it shows/hides those fields live. A seed saves to the folder set in Settings → Writer's Dashboard → "Seeds folder" (browsable, or create one on the spot) instead of wherever you ran the command, skips the word/char count on the rendered card entirely, and has no status of its own — `status` is only for however you track a story once it's actually being written (defaults to "in progress" / "done," fully editable in Settings).
 
-"+ Add part from this folder" opens a picker over that folder's other markdown files, so filenames are never hand-typed. Creates `_card — <title>.md` and opens it.
+"+ Add part from this folder (incl. subfolders)" opens a picker over that folder's other markdown files — including ones inside subfolders like "Drafts" or "materials" — so filenames are never hand-typed. Creates `_card — <title>.md` and opens it.
 
 **Promoting a seed:** click the ↗ button on a seed card, or run **"Promote seed to story."** Lets you create a new folder (suggested as a sibling of your Seeds folder, named after the title) or pick an existing one, moves the card there via Obsidian's own rename — which updates links, including on the dashboard canvas — turns off `is_seed`, and opens the edit form so you can fill in status/target/parts right away.
 
 **Editing a card:** click the ✎ button on the card itself, or run **"Edit story card"** with the card note open. Same form, pre-filled — add a goal, change the target, add or remove parts, all without touching raw YAML.
 
-The Properties panel is hidden on any note with `cssclasses: [storyboard-card]` (the ones this plugin creates), since the card already shows that data — toggle this in Settings → Story Board → "Hide frontmatter on story cards." Status/part-status changes happen through the rendered card's own controls, not by editing YAML directly.
+The Properties panel is hidden on any note with `cssclasses: [storyboard-card]` (the ones this plugin creates), since the card already shows that data — toggle this in Settings → Writer's Dashboard → "Hide frontmatter on story cards." Status/part-status changes happen through the rendered card's own controls, not by editing YAML directly.
 
 **Note:** the "highlight / priority" field exists in the schema but its UI (the ★ on the card, and the toggle in this form) is currently disabled — Obsidian Canvas doesn't reliably live-refresh embedded note content, which made it look clickable without doing anything until a reload. See `ROADMAP.md`.
 
@@ -49,7 +49,7 @@ parts: []
 ````
 
 - `is_seed` — the card's type, not a status. `true` = idea only (title/description/focus shown; status, target, goals, and parts are ignored even if present). `false` = a developed story.
-- `status` — only meaningful when `is_seed: false`; one of the configured story statuses (Settings → Story Board). Position in that list drives the color, not the label.
+- `status` — only meaningful when `is_seed: false`; one of the configured story statuses (Settings → Writer's Dashboard). Position in that list drives the color, not the label.
 - `description` — a line or two, shown under the title on the card.
 - `highlight` — in the schema but its UI is currently disabled (see the note above).
 - `target` — free text, manual, changes whenever the real-world target changes.
@@ -61,10 +61,14 @@ parts: []
 ## Commands
 
 - **Insert story card template** — drops the YAML + block above into the current note.
-- **Sync dashboard canvas with story cards** — scans the vault for notes with `storyboard-card: true` and adds any missing ones as file-nodes to the canvas set in Settings → Story Board → "Dashboard canvas," staged in a grid below whatever's already there. It never moves or removes existing nodes — placement past that point is yours.
+- **Sync dashboard canvas with story cards** — scans the vault for notes with `storyboard-card: true` and adds any missing ones as file-nodes to the canvas set in Settings → Writer's Dashboard → "Dashboard canvas," staged in a grid below whatever's already there. It never moves or removes existing nodes — placement past that point is yours.
 - **Create story card** / **Edit story card** / **Promote seed to story** — see above.
 
-The dashboard canvas itself is picked from a dropdown of existing `.canvas` files in Settings → Story Board, with a "+ New canvas" button to create one on the spot — no more typing a path that might not exist.
+## One dashboard canvas, not several
+
+This plugin is built around **one** canvas holding every story card — not a canvas per story. A plugin-created canvas for a single story (an outline, a scene map) is a perfectly normal thing to have, but it's a different kind of canvas and shouldn't also be picked as the "Dashboard canvas" — if it is, "Sync" will dump every card from the whole vault onto it too.
+
+The dashboard canvas is picked from a dropdown of existing `.canvas` files in Settings → Writer's Dashboard, with a "+ New canvas" button to create one on the spot. Changing which canvas is selected there asks for confirmation first and explains the effect, since picking a different one doesn't move any cards already placed on the old one — it just means future syncs go to the new one, so the two can end up out of sync with each other if you switch back and forth.
 
 ## Cycles / grouping
 

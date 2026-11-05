@@ -36,7 +36,7 @@ export async function syncDashboard(plugin: StoryBoardPlugin): Promise<void> {
 	const canvasFile = app.vault.getAbstractFileByPath(path);
 
 	if (!canvasFile || !(canvasFile instanceof TFile)) {
-		new Notice(`Story Board: couldn't find dashboard canvas at "${path}". Check the setting.`);
+		new Notice(`Writer's Dashboard: couldn't find dashboard canvas at "${path}". Check the setting.`);
 		return;
 	}
 
@@ -45,7 +45,7 @@ export async function syncDashboard(plugin: StoryBoardPlugin): Promise<void> {
 	try {
 		data = JSON.parse(raw);
 	} catch {
-		new Notice("Story Board: dashboard canvas file isn't valid JSON — aborting sync.");
+		new Notice("Writer's Dashboard: dashboard canvas file isn't valid JSON — aborting sync.");
 		return;
 	}
 	if (!Array.isArray(data.nodes)) data.nodes = [];
@@ -61,7 +61,7 @@ export async function syncDashboard(plugin: StoryBoardPlugin): Promise<void> {
 
 	const missing = cardFiles.filter((f) => !existingPaths.has(f.path));
 	if (missing.length === 0) {
-		new Notice("Story Board: dashboard already has every card.");
+		new Notice(`Writer's Dashboard: "${path}" already has every card.`);
 		return;
 	}
 
@@ -86,5 +86,5 @@ export async function syncDashboard(plugin: StoryBoardPlugin): Promise<void> {
 	});
 
 	await app.vault.modify(canvasFile, JSON.stringify(data, null, "\t"));
-	new Notice(`Story Board: added ${missing.length} card(s) to the dashboard (staged below existing layout).`);
+	new Notice(`Writer's Dashboard: added ${missing.length} card(s) to "${path}" (staged below existing layout).`);
 }

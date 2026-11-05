@@ -1,6 +1,6 @@
 import { App, PluginSettingTab, Setting, TFile } from "obsidian";
 import type StoryBoardPlugin from "./main";
-import { FolderPickerModal, NamePromptModal } from "./modals";
+import { ConfirmModal, FolderPickerModal, NamePromptModal } from "./modals";
 
 export interface StoryBoardSettings {
 	// Ordered lists — position in the list drives the auto-assigned color,
@@ -34,7 +34,7 @@ export class StoryBoardSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		containerEl.createEl("h3", { text: "Story Board" });
+		containerEl.createEl("h3", { text: "Writer's Dashboard" });
 
 		new Setting(containerEl)
 			.setName("Hide frontmatter on story cards")
@@ -51,7 +51,9 @@ export class StoryBoardSettingTab extends PluginSettingTab {
 
 		const dashboardSetting = new Setting(containerEl)
 			.setName("Dashboard canvas")
-			.setDesc("Canvas the sync command adds new story cards to.");
+			.setDesc(
+				"The one canvas the sync command adds new story cards to. This plugin is meant to use a single dashboard canvas for everything — not a per-story canvas — so switching it is confirmed below."
+			);
 
 		dashboardSetting.addDropdown((dropdown) => {
 			const files = canvasFiles();
@@ -61,9 +63,20 @@ export class StoryBoardSettingTab extends PluginSettingTab {
 				void this.plugin.saveSettings();
 			}
 			dropdown.setValue(this.plugin.settings.dashboardCanvasPath);
-			dropdown.onChange(async (value) => {
-				this.plugin.settings.dashboardCanvasPath = value;
-				await this.plugin.saveSettings();
+			dropdown.onChange((value) => {
+				const previous = this.plugin.settings.dashboardCanvasPath;
+				if (value === previous) return;
+				new ConfirmModal(
+					this.app,
+					`Switch the dashboard canvas to "${value}"? From now on, "Sync dashboard canvas" adds new cards there instead of "${previous || "(none set)"}" — cards already placed on "${previous}" are left exactly as they are, not moved. Using more than one canvas as a dashboard isn't supported; cards synced to both will just end up listed on both.`,
+					"Switch",
+					async () => {
+						this.plugin.settings.dashboardCanvasPath = value;
+						await this.plugin.saveSettings();
+						this.display();
+					},
+					() => this.display()
+				).open();
 			});
 		});
 
