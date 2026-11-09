@@ -27,7 +27,7 @@ highlight: false
 target: ""
 word_goal:
 char_goal:
-focus: ""
+focus: []
 final_draft: ""
 parts: []
 ---

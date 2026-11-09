@@ -45,6 +45,10 @@ drawn to each story card — no plugin support needed for that, Canvas already d
   independently — this is a confirmation guardrail, not an enforced constraint.
 - "Sync dashboard canvas" command adds any card not yet on the canvas as a new node, staged below
   existing layout; never moves/removes what's already placed.
+- `focus` is a list, not a single string — a story can have more than one live next step at once (e.g.
+  "edit chapter 1" and "write chapter 2," picked by mood). `normalizeFocus()` (`types.ts`) accepts a plain
+  string too, so cards written before this change still render correctly. The edit/create form has an
+  add/remove list for it, same pattern as Parts.
 - Frontmatter Properties panel, Obsidian's inline title, and the Canvas node's filename label are all
   hidden on card notes (toggleable), so the raw filename doesn't duplicate the card's own title.
 - "Promote seed to story" (command + ↗ button on seed cards, `promote.ts`): creates or picks a

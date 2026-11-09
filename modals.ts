@@ -1,6 +1,6 @@
 import { App, FuzzySuggestModal, Modal, Notice, Setting, TFile, TFolder, getFrontMatterInfo, normalizePath, parseYaml } from "obsidian";
 import type StoryBoardPlugin from "./main";
-import type { PartEntry, StoryCardFrontmatter } from "./types";
+import { normalizeFocus, type PartEntry, type StoryCardFrontmatter } from "./types";
 
 function isCardFile(app: App, file: TFile): boolean {
 	return app.metadataCache.getFileCache(file)?.frontmatter?.["storyboard-card"] === true;
@@ -170,7 +170,7 @@ export class CardFormModal extends Modal {
 	private description = "";
 	private status: string;
 	private target = "";
-	private focus = "";
+	private focusItems: string[] = [];
 	private wordGoal: number | undefined;
 	private charGoal: number | undefined;
 	private parts: PartEntry[] = [];
@@ -205,7 +205,7 @@ export class CardFormModal extends Modal {
 			this.description = fm.description ?? "";
 			this.status = fm.status ?? this.status;
 			this.target = fm.target ?? "";
-			this.focus = fm.focus ?? "";
+			this.focusItems = normalizeFocus(fm.focus);
 			this.wordGoal = fm.word_goal;
 			this.charGoal = fm.char_goal;
 			this.parts = Array.isArray(fm.parts) ? fm.parts.map((p) => ({ ...p })) : [];
@@ -274,9 +274,37 @@ export class CardFormModal extends Modal {
 			t.onChange((v) => (this.charGoal = v ? Number(v) : undefined));
 		});
 
-		new Setting(contentEl)
-			.setName("Focus / next step")
-			.addText((t) => t.setValue(this.focus).onChange((v) => (this.focus = v)));
+		contentEl.createEl("h4", { text: "Focus / next steps" });
+		contentEl.createEl("p", {
+			text: "More than one live option at once is fine — e.g. \"edit chapter 1\" and \"write chapter 2\" can both be open.",
+			cls: "setting-item-description",
+		});
+		const focusEl = contentEl.createDiv();
+
+		const redrawFocus = () => {
+			focusEl.empty();
+			this.focusItems.forEach((task, i) => {
+				const row = focusEl.createDiv({ cls: "story-board-modal-part-row" });
+				const input = row.createEl("input", { type: "text", value: task });
+				input.style.flex = "1";
+				input.addEventListener("change", () => {
+					this.focusItems[i] = input.value;
+				});
+				const removeBtn = row.createEl("button", { text: "✕" });
+				removeBtn.addEventListener("click", () => {
+					this.focusItems.splice(i, 1);
+					redrawFocus();
+				});
+			});
+			const addBtn = focusEl.createEl("button", { text: "+ Add task" });
+			addBtn.addEventListener("click", () => {
+				this.focusItems.push("");
+				redrawFocus();
+				const inputs = focusEl.querySelectorAll("input");
+				(inputs[inputs.length - 1] as HTMLInputElement | undefined)?.focus();
+			});
+		};
+		redrawFocus();
 
 		partsSection = contentEl.createDiv();
 		partsSection.style.display = this.isSeed ? "none" : "";
@@ -378,7 +406,7 @@ export class CardFormModal extends Modal {
 			data.description = this.description;
 			data.is_seed = this.isSeed;
 			data.highlight = this.highlight;
-			data.focus = this.focus;
+			data.focus = normalizeFocus(this.focusItems);
 
 			if (this.isSeed) {
 				delete data.status;

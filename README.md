@@ -39,7 +39,7 @@ highlight: false
 target: ""
 word_goal:
 char_goal:
-focus: ""
+focus: []
 final_draft: ""
 parts: []
 ---
@@ -54,7 +54,7 @@ parts: []
 - `highlight` — in the schema but its UI is currently disabled (see the note above).
 - `target` — free text, manual, changes whenever the real-world target changes.
 - `word_goal` / `char_goal` — optional. If set, the card shows a progress bar toward it; if both are empty, it just shows the live total.
-- `focus` — your next concrete step; free text. Shown for both seeds and developed stories.
+- `focus` — a list of next concrete steps, not just one — you can have several live options at once (e.g. "edit chapter 1" and "write chapter 2") and pick whichever fits your mood. Shown for both seeds and developed stories. A plain string still works too, for one task.
 - `final_draft` — a note link to the assembled final text; shown on the card whenever it's filled in.
 - `parts` — list of `{file, status}`, one file per part. Each part's status is also one of the configured list and gets its own color dot. Word counts are read live from the actual files, never typed in by hand.
 

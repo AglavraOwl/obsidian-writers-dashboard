@@ -1,6 +1,6 @@
 import { App, MarkdownPostProcessorContext, TFile } from "obsidian";
 import type StoryBoardPlugin from "./main";
-import type { StoryCardFrontmatter, PartEntry } from "./types";
+import { normalizeFocus, type StoryCardFrontmatter, type PartEntry } from "./types";
 import { countWords, countChars } from "./wordcount";
 import { CardFormModal } from "./modals";
 import { PromoteSeedModal } from "./promote";
@@ -120,11 +120,12 @@ export async function renderStoryCard(
 		makeInternalLink(finalRow, app, fm.final_draft, sourcePath, "Final draft");
 	}
 
-	// Focus / next step
-	if (fm.focus) {
+	// Focus / next steps — can be more than one live option at once (e.g.
+	// "edit chapter 1" and "write chapter 2" both open), not a single task.
+	for (const task of normalizeFocus(fm.focus)) {
 		const focusRow = card.createDiv({ cls: "story-board-focus" });
 		focusRow.createEl("span", { text: "▶ ", cls: "story-board-focus-arrow" });
-		focusRow.createEl("span", { text: fm.focus });
+		focusRow.createEl("span", { text: task });
 	}
 
 	// Parts

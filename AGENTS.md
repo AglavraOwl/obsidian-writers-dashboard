@@ -26,7 +26,9 @@ status: ""              # ONLY when is_seed is false. One of the user's configur
 target: ""              # deadline / contest / venue, free text, optional
 word_goal:               # optional number
 char_goal:               # optional number
-focus: ""               # the next concrete step
+focus: []               # list of concrete next steps — can hold more than one live option at once
+                         # (e.g. "edit chapter 1" AND "write chapter 2"), not just a single task.
+                         # A plain string also still works for one task, for backward compatibility.
 final_draft: ""          # optional link to an assembled/final draft note
 parts:                   # omit this key entirely when is_seed is true
   - file: "exact-filename.md"   # just the filename if it's unique in the vault; if another file
@@ -65,7 +67,8 @@ folder of their own yet).
 5. **Title and description** come from what the planning material actually says, not the filename, and
    description is a short summary — not quoted prose from the source material.
 6. **Status, target, focus**: infer from explicit statements in the folder's notes (a stated deadline, a
-   stated next step) where present; otherwise ask instead of inventing one.
+   stated next step) where present; otherwise ask instead of inventing one. `focus` is a list — if the
+   notes mention more than one live next step, include all of them, not just one.
 7. **Never invent `word_goal` or `char_goal`.** Leave them unset unless the user states a number.
 8. **Confirm before writing** when `is_seed` or the `parts` mapping was inferred rather than stated
    outright — those two are the most consequential and least obvious to fix silently later.
