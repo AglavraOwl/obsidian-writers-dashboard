@@ -7,6 +7,12 @@ export interface StoryCardFrontmatter {
 	"storyboard-card"?: boolean;
 	title?: string;
 	description?: string;
+	cover?: string;
+	// "crop" (default): fixed-height banner, image cropped to fill — crop
+	// point controlled by cover_position. "contain": no cropping, banner
+	// height follows the image's own aspect ratio at full card width.
+	cover_fit?: "crop" | "contain";
+	cover_position?: "top" | "center" | "bottom";
 	status?: string;
 	is_seed?: boolean;
 	highlight?: boolean;

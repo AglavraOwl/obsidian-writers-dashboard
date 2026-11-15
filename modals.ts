@@ -168,6 +168,9 @@ export class CardFormModal extends Modal {
 	private highlight = false;
 	private title = "";
 	private description = "";
+	private cover = "";
+	private coverFit: "crop" | "contain" = "crop";
+	private coverPosition: "top" | "center" | "bottom" = "center";
 	private status: string;
 	private target = "";
 	private focusItems: string[] = [];
@@ -203,6 +206,9 @@ export class CardFormModal extends Modal {
 			this.highlight = !!fm.highlight;
 			this.title = fm.title ?? this.existingFile.basename;
 			this.description = fm.description ?? "";
+			this.cover = fm.cover ?? "";
+			this.coverFit = fm.cover_fit === "contain" ? "contain" : "crop";
+			this.coverPosition = fm.cover_position ?? "center";
 			this.status = fm.status ?? this.status;
 			this.target = fm.target ?? "";
 			this.focusItems = normalizeFocus(fm.focus);
@@ -245,11 +251,65 @@ export class CardFormModal extends Modal {
 			.setDesc("Short — a line or two, what the idea is.")
 			.addTextArea((t) => t.setValue(this.description).onChange((v) => (this.description = v)));
 
+		contentEl.createEl("h4", { text: "Cover", cls: "story-board-modal-group-heading" });
+		const IMAGE_EXTENSIONS = new Set(["png", "jpg", "jpeg", "webp", "gif", "svg"]);
+		const coverSetting = new Setting(contentEl)
+			.setName("Cover image")
+			.setDesc("Shown as a banner at the top of the card. Optional.");
+		let coverTextSetter: ((v: string) => void) | undefined;
+		coverSetting.addText((t) => {
+			coverTextSetter = (v) => t.setValue(v);
+			t.setValue(this.cover).onChange((v) => (this.cover = v));
+		});
+		coverSetting.addButton((button) =>
+			button.setButtonText("Browse…").onClick(() => {
+				const images = this.app.vault.getFiles().filter((f) => IMAGE_EXTENSIONS.has(f.extension.toLowerCase()));
+				if (images.length === 0) {
+					new Notice("No image files found in the vault.");
+					return;
+				}
+				new FilePickerModal(
+					this.app,
+					images,
+					(file) => {
+						this.cover = file.path;
+						coverTextSetter?.(file.path);
+					},
+					(file) => file.path
+				).open();
+			})
+		);
+
+		let coverPositionSetting: Setting | undefined;
+		new Setting(contentEl).setName("Cover fit").addDropdown((d) => {
+			d.addOption("crop", "Crop to banner");
+			d.addOption("contain", "Keep original proportions (fit by width)");
+			d.setValue(this.coverFit);
+			d.onChange((v) => {
+				this.coverFit = v === "contain" ? "contain" : "crop";
+				coverPositionSetting?.settingEl.toggle(this.coverFit === "crop");
+			});
+		});
+
+		coverPositionSetting = new Setting(contentEl)
+			.setName("Cover crop position")
+			.setDesc("Which part of the image stays visible when it's cropped to fit the banner.")
+			.addDropdown((d) => {
+				d.addOption("top", "Top");
+				d.addOption("center", "Center");
+				d.addOption("bottom", "Bottom");
+				d.setValue(this.coverPosition);
+				d.onChange((v) => (this.coverPosition = v as "top" | "center" | "bottom"));
+			});
+		coverPositionSetting.settingEl.toggle(this.coverFit === "crop");
+
 		// Highlight is shelved for now (see ROADMAP.md) — field and value are
 		// still read/written below, just not exposed in this form.
 
 		storyOnly = contentEl.createDiv();
 		storyOnly.style.display = this.isSeed ? "none" : "";
+		storyOnly.createEl("hr");
+		storyOnly.createEl("h4", { text: "Story details", cls: "story-board-modal-group-heading" });
 
 		new Setting(storyOnly).setName("Status").addDropdown((d) => {
 			for (const s of this.plugin.settings.storyStatuses) d.addOption(s, s);
@@ -404,6 +464,15 @@ export class CardFormModal extends Modal {
 			data.cssclasses = ["storyboard-card"];
 			data.title = title;
 			data.description = this.description;
+			if (this.cover.trim()) {
+				data.cover = this.cover.trim();
+				data.cover_fit = this.coverFit;
+				data.cover_position = this.coverPosition;
+			} else {
+				delete data.cover;
+				delete data.cover_fit;
+				delete data.cover_position;
+			}
 			data.is_seed = this.isSeed;
 			data.highlight = this.highlight;
 			data.focus = normalizeFocus(this.focusItems);
@@ -442,9 +511,13 @@ export class CardFormModal extends Modal {
 			targetFolderPath = this.folder.path;
 		}
 
+		// No "_card — " prefix: Canvas falls back to showing the raw filename
+		// (not the title frontmatter field) once zoomed out past the point
+		// where it renders embedded content at all — a plugin can't reach
+		// that fallback, so the filename itself has to already be the title.
 		const safeName = title.replace(/[\\/:*?"<>|]/g, "");
 		const base = targetFolderPath ? `${targetFolderPath}/` : "";
-		const path = normalizePath(`${base}_card — ${safeName}.md`);
+		const path = normalizePath(`${base}${safeName}.md`);
 		if (this.app.vault.getAbstractFileByPath(path)) {
 			new Notice(`"${path}" already exists.`);
 			return null;

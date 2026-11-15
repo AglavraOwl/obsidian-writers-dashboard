@@ -4,6 +4,7 @@ import { normalizeFocus, type StoryCardFrontmatter, type PartEntry } from "./typ
 import { countWords, countChars } from "./wordcount";
 import { CardFormModal } from "./modals";
 import { PromoteSeedModal } from "./promote";
+import { fitCardToContent } from "./sync";
 
 // Color is driven purely by position in the configured status list, never by
 // the label text — so renaming/reordering statuses (or a differently-worded
@@ -64,6 +65,22 @@ export async function renderStoryCard(
 	// See ROADMAP.md.
 	card.style.borderLeftColor = colorForPosition(settings.storyStatuses, fm.status);
 
+	if (fm.cover) {
+		const coverDest = app.metadataCache.getFirstLinkpathDest(fm.cover, sourcePath);
+		if (coverDest) {
+			const coverWrap = card.createDiv({ cls: "story-board-cover" });
+			const img = coverWrap.createEl("img", { attr: { src: app.vault.getResourcePath(coverDest) } });
+			if (fm.cover_fit === "contain") {
+				// No cropping: height follows the image's own proportions at
+				// full card width (a 1:1 image shows as a full-width square).
+				img.style.height = "auto";
+				img.style.objectFit = "initial";
+			} else {
+				img.style.objectPosition = fm.cover_position ?? "center";
+			}
+		}
+	}
+
 	// Header
 	const header = card.createDiv({ cls: "story-board-header" });
 	header.createEl("div", { text: fm.title || file.basename, cls: "story-board-title" });
@@ -86,6 +103,19 @@ export async function renderStoryCard(
 	editBtn.setAttribute("aria-label", "Edit card");
 	editBtn.addEventListener("click", () => {
 		new CardFormModal(app, plugin, file.parent ?? app.vault.getRoot(), { existingFile: file }).open();
+	});
+
+	// A card's content height changes as fields are added (a cover, more
+	// parts, …) but its canvas node doesn't resize itself to match — this
+	// measures the card as actually rendered right now and pushes that
+	// height to its node on the dashboard canvas, on request.
+	const fitBtn = headerButtons.createEl("button", { cls: "story-board-edit-btn", text: "↕" });
+	fitBtn.setAttribute("aria-label", "Fit card to dashboard size");
+	fitBtn.addEventListener("click", () => {
+		// scrollHeight, not getBoundingClientRect — the canvas viewport can be
+		// zoomed, which scales the latter visually without changing the
+		// card's actual layout height in the canvas's own coordinate space.
+		void fitCardToContent(plugin, file, card.scrollHeight);
 	});
 
 	// Status row — a seed has no status, just an idea. Target (if any) sits

@@ -12,7 +12,7 @@ Run **"Create story card"** from the Command Palette (uses the currently open fi
 
 "This is a seed" is the card's type, not a status — a seed is just title, main idea, and focus; a full story additionally gets status, target, word/char goal, and parts. Toggling it shows/hides those fields live. A seed saves to the folder set in Settings → Writer's Dashboard → "Seeds folder" (browsable, or create one on the spot) instead of wherever you ran the command, skips the word/char count on the rendered card entirely, and has no status of its own — `status` is only for however you track a story once it's actually being written (defaults to "in progress" / "done," fully editable in Settings).
 
-"+ Add part from this folder (incl. subfolders)" opens a picker over that folder's other markdown files — including ones inside subfolders like "Drafts" or "materials" — so filenames are never hand-typed. Creates `_card — <title>.md` and opens it.
+"+ Add part from this folder (incl. subfolders)" opens a picker over that folder's other markdown files — including ones inside subfolders like "Drafts" or "materials" — so filenames are never hand-typed. Creates `<title>.md` and opens it — no "_card — " prefix, because Canvas falls back to showing the raw filename (not the `title` field) once you're zoomed out past the point where it renders a node's content at all, so the filename has to already read as the title. If you have existing cards from before this change, you can rename them yourself (F2 in Obsidian) — the plugin only cares about frontmatter, never the filename, and Obsidian updates links (including on canvas) automatically.
 
 **Promoting a seed:** click the ↗ button on a seed card, or run **"Promote seed to story."** Lets you create a new folder (suggested as a sibling of your Seeds folder, named after the title) or pick an existing one, moves the card there via Obsidian's own rename — which updates links, including on the dashboard canvas — turns off `is_seed`, and opens the edit form so you can fill in status/target/parts right away.
 
@@ -33,6 +33,9 @@ cssclasses:
   - storyboard-card
 title: ""
 description: ""
+cover: ""
+cover_fit: crop
+cover_position: center
 is_seed: true
 status: ""
 highlight: false
@@ -51,6 +54,9 @@ parts: []
 - `is_seed` — the card's type, not a status. `true` = idea only (title/description/focus shown; status, target, goals, and parts are ignored even if present). `false` = a developed story.
 - `status` — only meaningful when `is_seed: false`; one of the configured story statuses (Settings → Writer's Dashboard). Position in that list drives the color, not the label.
 - `description` — a line or two, shown under the title on the card.
+- `cover` — a filename/path to an image in the vault (same resolution as `final_draft`), shown as a banner across the top of the card. Pick one in the form via the "Browse…" button, or set it by hand. Normal-zoom only — doesn't show in Canvas's zoomed-out fallback (see "Refreshing the canvas" below for a related, different limitation).
+- `cover_fit` — `crop` (default, fixed-height banner) or `contain` (no cropping — the banner's height follows the image's own proportions at full card width, so a 1:1 image shows as a full-width square). Set via the "Cover fit" dropdown in the form.
+- `cover_position` — only matters when `cover_fit` is `crop`: `top` / `center` (default) / `bottom` — which part of the image survives the crop.
 - `highlight` — in the schema but its UI is currently disabled (see the note above).
 - `target` — free text, manual, changes whenever the real-world target changes.
 - `word_goal` / `char_goal` — optional. If set, the card shows a progress bar toward it; if both are empty, it just shows the live total.
@@ -62,7 +68,14 @@ parts: []
 
 - **Insert story card template** — drops the YAML + block above into the current note.
 - **Sync dashboard canvas with story cards** — scans the vault for notes with `storyboard-card: true` and adds any missing ones as file-nodes to the canvas set in Settings → Writer's Dashboard → "Dashboard canvas," staged in a grid below whatever's already there. It never moves or removes existing nodes — placement past that point is yours.
+- **Refresh dashboard canvas** — see "Refreshing the canvas" below.
 - **Create story card** / **Edit story card** / **Promote seed to story** — see above.
+
+## Refreshing the canvas
+
+Canvas doesn't reliably re-render a file-node's content when the underlying note changes — a confirmed Obsidian platform limitation, not specific to this plugin (Dataview and other live-updating canvas content hit the same thing). In practice: if you edit a card's cover, status, or anything else while looking at it on the dashboard canvas and it doesn't visually update, run **"Refresh dashboard canvas"** — it finds the open tab(s) showing that canvas and forces them to reload, the same effect as closing and reopening the tab yourself, just without losing your place.
+
+A related but separate issue: a canvas node has a fixed size, and Canvas never resizes it to fit a card that's grown (e.g. after adding a cover) — the extra content just gets clipped until you manually drag the node's edge. Click the **↕** button on the card to measure it as currently rendered and push that height to its node on the dashboard canvas (runs a refresh automatically). This is deliberately a manual, one-card-at-a-time action, not automatic — the safe way to do it would mean reading and rewriting the canvas file on every card render, which risks clobbering edits from other cards rendering at the same time, and would fight any sizing you set on purpose.
 
 ## One dashboard canvas, not several
 

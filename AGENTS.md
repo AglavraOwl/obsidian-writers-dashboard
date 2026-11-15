@@ -20,6 +20,14 @@ cssclasses:
   - storyboard-card
 title: ""              # clean display title — not the raw filename
 description: ""        # one or two lines: what the idea/story is
+cover: ""               # optional — filename/path to an image in the vault, shown as a banner on the
+                         # card. Only set this if the user names an actual existing image file; don't
+                         # invent one or leave a guessed path.
+cover_fit: crop         # only meaningful alongside cover. "crop" (default) = fixed-height banner,
+                         # cropped; "contain" = no cropping, banner height follows the image's own
+                         # proportions at full card width.
+cover_position: center  # only meaningful when cover_fit is "crop": "top" | "center" | "bottom" —
+                         # which part of the image survives the crop.
 is_seed: true           # true = idea only. false = being actively developed.
 status: ""              # ONLY when is_seed is false. One of the user's configured
                          # story statuses (ask, or check Settings → Story Board — don't guess an enum).
@@ -43,9 +51,12 @@ parts:                   # omit this key entirely when is_seed is true
 ```
 ````
 
-File location: `_card — <Title>.md`, in the **same folder** as the story's own files — never in the
-seeds folder for a developed story (that folder is only for `is_seed: true` cards that don't have a
-folder of their own yet).
+File location: `<Title>.md` (just the title, no prefix — Canvas falls back to the raw filename when
+zoomed out past the point where it renders content at all, so the filename has to already read as the
+title), in the **same folder** as the story's own files — never in the seeds folder for a developed
+story (that folder is only for `is_seed: true` cards that don't have a folder of their own yet). If a
+file with that exact name already exists for another reason, ask rather than picking a different name
+silently — the filename *is* what Canvas shows, so it matters which one wins.
 
 ## Process
 

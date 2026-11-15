@@ -56,6 +56,33 @@ drawn to each story card — no plugin support needed for that, Canvas already d
   there via `fileManager.renameFile` (so links — including the dashboard canvas's reference to it —
   update automatically, same mechanism Obsidian's own file-explorer move uses), flips `is_seed` off, and
   opens the edit form.
+- Cover images: `cover` frontmatter field (filename/path, resolved the same way as `final_draft`/
+  `parts[].file`), rendered as a banner across the top of the card at normal zoom. `cover_fit`
+  (`crop`, default — fixed ~140px height, `object-fit: cover` — or `contain` — no cropping, banner
+  height follows the image's own aspect ratio) and `cover_position` (`top`/`center`/`bottom`, crop mode
+  only) control how. Create/edit form has a text field + "Browse…" picker over the vault's image files,
+  plus dropdowns for fit/position (position dropdown hidden when fit is `contain`). Does *not* show in
+  Canvas's zoomed-out fallback — see "Known issues" — that's a separate problem.
+- "Refresh dashboard canvas" command (`sync.ts`): Canvas doesn't reliably re-render a file-node's content
+  on file change (same platform limitation as the highlight issue below). First attempt was touching the
+  canvas file to trigger a reload (a workaround reported on the Obsidian forum) — confirmed by the user
+  NOT to work in practice. Current approach: find the open leaf(s) showing that canvas and force them
+  through `leaf.setViewState({type:"empty"})` then `leaf.openFile(canvasFile)` — a real teardown/rebuild,
+  not a same-file no-op, matching the forum's actually-confirmed workaround ("navigate away and back").
+  Manual command, not automatic — touching/reloading on every single card edit regardless of whether the
+  canvas is even open seemed like the wrong default. If this *also* turns out not to work reliably, the
+  next thing to try is detaching and recreating the leaf entirely rather than just changing its view state.
+  **Confirmed working** by the user after this change.
+- "↕" button on the card (`cardRenderer.ts`) / `fitCardToContent()` (`sync.ts`): a canvas node's size is
+  fixed at whatever it was when placed — Canvas never grows it to fit a card whose content later grows
+  (adding a cover was the case that surfaced this; the node clipped the card until manually dragged
+  taller). Measures `card.scrollHeight` (not `getBoundingClientRect()` — that reflects the canvas's
+  current zoom, not the node's actual coordinate-space size) and writes it to that one node, then calls
+  the same leaf-reload as Refresh. Deliberately manual and one-card-at-a-time, for the same race-condition
+  and fights-manual-sizing reasons automatic canvas-file writes were ruled out for Refresh.
+- New cards no longer get a `"_card — "` filename prefix — just `<Title>.md` — so Canvas's zoomed-out
+  filename fallback (see "Known issues") already reads as the title. Existing cards keep their old name
+  until manually renamed (F2 in Obsidian; safe, nothing here matches on filename).
 - README exists in English and Russian (`README.md` / `README.ru.md`), cross-linked.
 - Published via BRAT: GitHub release `0.1.0` with `manifest.json`/`main.js`/`styles.css` attached.
 - Repo: https://github.com/AglavraOwl/obsidian-writers-dashboard (public). Installed in the user's real
@@ -77,6 +104,20 @@ drawn to each story card — no plugin support needed for that, Canvas already d
   API for this — would mean leaning on the same kind of unsupported internal hooks the Advanced Canvas
   plugin uses. Worth investigating only if this becomes an active pain point again.
 
+- **Canvas's zoomed-out label shows the raw filename, not `title` — fixed by changing the filename
+  convention, not by styling it.** Past a zoom threshold, Canvas stops rendering a file-node's content
+  at all (a performance optimization) and falls back to a plain text label — confirmed via forum search
+  to be `file.basename`, not anything from the note's frontmatter. Our renderer never even runs at that
+  zoom level, so no CSS or post-processor change can reach it (same category of limitation as the
+  highlight/live-refresh issue above). Fix: card filenames no longer get a `"_card — "` prefix — new
+  cards are just `<Title>.md`, so the fallback already reads as the title. Existing cards keep their old
+  name until manually renamed (F2 in Obsidian; safe, since nothing in this plugin matches on filename —
+  only on frontmatter — and Obsidian updates links, including on canvas, automatically).
+  **Covers/pictures at this same zoom level are not achievable the same way** — the fallback is text-only
+  for a markdown file-node; an actual thumbnail would need the node to be a different kind of canvas
+  object (an image node) or genuine custom-node rendering, the same unsupported territory as the
+  highlight fix above. Revisit together with the cover-image backlog item below if that gets picked up.
+
 ## Deliberate simplifications (not bugs)
 
 - A part is always exactly one file. Multi-file parts were considered and explicitly rejected — the
@@ -90,10 +131,6 @@ drawn to each story card — no plugin support needed for that, Canvas already d
 
 ## Backlog (not committed to, just not forgotten)
 
-- **Pictures/covers on cards.** Wanted, not speculative — the user wants images for visual distinction
-  between cards at a glance. No design yet: likely a frontmatter field (e.g. `cover`) pointing at an
-  image in the vault, rendered at the top of the card. Worth checking whether Canvas file-node embeds
-  render local images reliably before committing to an approach.
 - **Per-part goals.** Currently `word_goal`/`char_goal` exist only at the story level, aggregating across
   all parts. Wanted: a goal (and its own progress bar) per individual part, not just the story total.
   `PartEntry` would need its own `word_goal`/`char_goal` alongside `file`/`status`.

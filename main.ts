@@ -2,7 +2,7 @@ import { App, Editor, Plugin, TFile, TFolder } from "obsidian";
 import { DEFAULT_SETTINGS, StoryBoardSettings, StoryBoardSettingTab } from "./settings";
 import { renderStoryCard } from "./cardRenderer";
 import type { StoryCardFrontmatter } from "./types";
-import { syncDashboard } from "./sync";
+import { refreshDashboard, syncDashboard } from "./sync";
 import { CardFormModal } from "./modals";
 import { PromoteSeedModal } from "./promote";
 
@@ -21,6 +21,7 @@ cssclasses:
   - storyboard-card
 title: ""
 description: ""
+cover: ""
 is_seed: true
 status: ""
 highlight: false
@@ -57,6 +58,12 @@ export default class StoryBoardPlugin extends Plugin {
 			id: "sync-dashboard",
 			name: "Sync dashboard canvas with story cards",
 			callback: () => syncDashboard(this),
+		});
+
+		this.addCommand({
+			id: "refresh-dashboard",
+			name: "Refresh dashboard canvas",
+			callback: () => refreshDashboard(this),
 		});
 
 		this.addCommand({
